@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas de Gamificación - Dragón de las Matemáticas</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=MedievalSharp&family=Cinzel:wght@400;700;900&family=Uncial+Antiqua&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(135deg, #1a0000 0%, #2d1810 100%);
+            color: #f4e4c1;
+            overflow-x: hidden;
+            padding: 20px;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 10px #ff6b00, 0 0 20px #ff6b00; }
+            50% { text-shadow: 0 0 20px #ff6b00, 0 0 40px #ff6b00, 0 0 60px #ff6b00; }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: slideIn 0.8s ease;
+        }
+
+        .header h1 {
+            font-family: 'Uncial Antiqua', cursive;
+            font-size: 3em;
+            color: #ffd700;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8);
+            animation: glow 2s ease-in-out infinite;
+            margin-bottom: 10px;
+        }
+
+        .header .subtitle {
+            font-size: 1.3em;
+            color: #f4e4c1;
+            font-family: 'MedievalSharp', cursive;
+        }
+
+        .music-control {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .music-btn {
+            background: linear-gradient(135deg, #8b4513, #a0522d);
+            color: #ffd700;
+            border: 3px solid #654321;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            font-family: 'MedievalSharp', cursive;
+            cursor: pointer;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .music-btn:hover {
+            background: linear-gradient(135deg, #a0522d, #cd853f);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.7);
+        }
+
+        .canvas-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-card {
+            background: linear-gradient(135deg, rgba(101, 67, 33, 0.95), rgba(139, 69, 19, 0.95));
+            border: 4px solid #8b4513;
+            border-radius: 15px;
+            padding: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            animation: slideIn 0.8s ease;
+            min-height: 180px;
+        }
+
+        .section-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .section-card:hover::before {
+            left: 100%;
+        }
+
+        .section-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: #ffd700;
+            box-shadow: 0 10px 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .section-icon {
+            font-size: 3.5em;
+            text-align: center;
+            margin-bottom: 15px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .section-title {
+            font-size: 1.4em;
+            color: #ffd700;
+            text-align: center;
+            margin-bottom: 10px;
+            font-family: 'MedievalSharp', cursive;
+        }
+
+        .section-description {
+            text-align: center;
+            font-size: 0.9em;
+            color: #dcc9a0;
+            line-height: 1.5;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 2000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, rgba(101, 67, 33, 0.98), rgba(139, 69, 19, 0.98));
+            border: 5px solid #ffd700;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 900px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.5);
+            position: relative;
+            animation: modalSlide 0.5s ease;
+        }
+
+        @keyframes modalSlide {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #8b4513;
+            padding-bottom: 20px;
+        }
+
+        .modal-title {
+            font-family: 'Uncial Antiqua', cursive;
+            font-size: 2.5em;
+            color: #ffd700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .close-btn {
+            background: linear-gradient(135deg, #8b0000, #a00000);
+            color: #ffd700;
+            border: 3px solid #5a0000;
+            padding: 10px 20px;
+            font-size: 1.2em;
+            font-family: 'MedievalSharp', cursive;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            background: linear-gradient(135deg, #a00000, #c00000);
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-body {
+            color: #f4e4c1;
+            line-height: 1.8;
+        }
+
+        .modal-body h3 {
+            color: #ffd700;
+            font-size: 1.8em;
+            margin: 25px 0 15px;
+            font-family: 'MedievalSharp', cursive;
+            border-bottom: 2px solid #8b4513;
+            padding-bottom: 10px;
+        }
+
+        .modal-body h4 {
+            color: #f4d03f;
+            font-size: 1.3em;
+            margin: 15px 0 10px;
+            font-family: 'MedievalSharp', cursive;
+        }
+
+        .modal-body p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .modal-body ul {
+            margin-left: 30px;
+            margin-bottom: 15px;
+        }
+
+        .modal-body li {
+            margin-bottom: 8px;
+            line-height: 1.6;
+        }
+
+        .modal-body table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-body th {
+            background: rgba(139, 69, 19, 0.8);
+            color: #ffd700;
+            padding: 12px;
+            border: 2px solid #8b4513;
+            font-family: 'MedievalSharp', cursive;
+        }
+
+        .modal-body td {
+            padding: 10px;
+            border: 1px solid #8b4513;
+        }
+
+        .modal-body tr:nth-child(even) {
+            background: rgba(139, 69, 19, 0.2);
+        }
+
+        .highlight-box {
+            background: rgba(255, 215, 0, 0.05);
+            border-left: 5px solid #ffd700;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+
+        .narrative-box {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.5), rgba(139, 69, 19, 0.3));
+            border: 3px solid #8b4513;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 12px;
+            font-style: italic;
+            color: #dcc9a0;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .modal-content {
+                padding: 20px;
+            }
+
+            .modal-title {
+                font-size: 1.8em;
+            }
+
+            .section-card {
+                min-height: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <audio id="bgMusic" loop>
+        <source src="https://www.bensound.com/bensound-music/bensound-epic.mp3" type="audio/mpeg">
+    </audio>
+
+    <div class="music-control">
+        <button class="music-btn" onclick="toggleMusic()">🎵 Música Medieval</button>
+    </div>
+
+    <div class="header">
+        <h1>🐉 Dragón de las Matemáticas</h1>
+        <p class="subtitle">Canvas de Gamificación Educativa</p>
+    </div>
+
+    <div class="canvas-grid">
+        <div class="section-card" onclick="openModal('proposito')">
+            <div class="section-icon">🎯</div>
+            <h2 class="section-title">Propósito</h2>
+            <p class="section-description">Objetivo educativo y razón de ser del proyecto.</p>
+        </div>
+
+        <div class="section-card" onclick="openModal('jugadores')">
+            <div class="section-icon">👥</div>
+            <h2 class="section-title">Jugadores</h2>
+            <p class="section-description">Perfil y características de los participantes.</p>
+        </div>
+
+        <div class="section-card" onclick="window.open('https://gemini.google.com/share/1dd1c8a1696c', '_blank')">
+            <div class="section-icon">📖</div>
+            <h2 class="section-title">Narrativa</h2>
+            <p class="section-description">Historia y ambientación de la aventura.</p>
+        </div>
+
+        <div class="section-card" onclick="openModal('desafios')">
+            <div class="section-icon">⚔️</div>
+            <h2 class="section-title">Desafíos</h2>
+            <p class="section-description">Retos matemáticos y niveles progresivos.</p>
+        </div>
+
+        <div class="section-card" onclick="openModal('mecanicas')">
+            <div class="section-icon">⚙️</div>
+            <h2 class="section-title">Mecánicas</h2>
+            <p class="section-description">Reglas del juego y sistema de progresión.</p>
+        </div>
+
+        <div class="section-card" onclick="openModal('recompensas')">
+            <div class="section-icon">🏆</div>
+            <h2 class="section-title">Recompensas</h2>
+            <p class="section-description">Sistema de puntos y logros.</p>
+        </div>
+
+        <div class="section-card" onclick="openModal('estetica')">
+            <div class="section-icon">🎨</div>
+            <h2 class="section-title">Estética</h2>
+            <p class="section-description">Diseño visual y experiencia sensorial.</p>
+        </div>
+
+        <div class="section-card" onclick="openModal('evaluacion')">
+            <div class="section-icon">📊</div>
+            <h2 class="section-title">Evaluación</h2>
+            <p class="section-description">Medición de aprendizaje y progreso.</p>
+        </div>
+
+        <div class="section-card" onclick="openModal('competencias')">
+            <div class="section-icon">🎓</div>
+            <h2 class="section-title">Competencias</h2>
+            <p class="section-description">Habilidades matemáticas desarrolladas.</p>
+        </div>
+
+        <div class="section-card" onclick="openModal('capacidades')">
+            <div class="section-icon">💡</div>
+            <h2 class="section-title">Capacidades</h2>
+            <p class="section-description">Destrezas cognitivas y metacognitivas.</p>
+        </div>
+
+        <div class="section-card" onclick="openModal('desempenos')">
+            <div class="section-icon">✅</div>
+            <h2 class="section-title">Desempeños</h2>
+            <p class="section-description">Evidencias del aprendizaje esperado.</p>
+        </div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle" class="modal-title"></h2>
+                <button class="close-btn" onclick="closeModal()">✖ Cerrar</button>
+            </div>
+            <div id="modalBody" class="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        let musicPlaying = false;
+        const audio = document.getElementById('bgMusic');
+        
+        function toggleMusic() {
+            if (musicPlaying) {
+                audio.pause();
+                musicPlaying = false;
+            } else {
+                audio.play();
+                musicPlaying = true;
+            }
+        }
+
+        const content = {
+            proposito: {
+                title: "🎯 Propósito del Juego",
+                body: `
+                    <h3>Objetivo Educativo Principal</h3>
+                    <p>Desarrollar y fortalecer competencias matemáticas fundamentales en estudiantes de octavo grado a través de una experiencia gamificada inmersiva que transforma el aprendizaje de operaciones con números enteros, jerarquía de operaciones y fracciones en una aventura épica.</p>
+
+                    <div class="highlight-box">
+                        <h4>Objetivos Específicos</h4>
+                        <ul>
+                            <li><strong>Matemáticos:</strong> Dominar operaciones con enteros, aplicar jerarquía de operaciones (PEMDAS/PEDMAS), operar con fracciones y simplificar expresiones algebraicas.</li>
+                            <li><strong>Cognitivos:</strong> Desarrollar pensamiento lógico, habilidades de resolución de problemas y razonamiento matemático estructurado.</li>
+                            <li><strong>Metacognitivos:</strong> Fomentar automonitoreo, reflexión sobre el proceso de aprendizaje y autorregulación.</li>
+                            <li><strong>Socioemocionales:</strong> Cultivar resiliencia matemática, gestión de ansiedad ante las matemáticas y confianza en capacidades numéricas.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Fundamentación Pedagógica</h3>
+                    <p>Este proyecto se fundamenta en:</p>
+                    <ul>
+                        <li><strong>Aprendizaje significativo:</strong> Conexión de conceptos matemáticos con contextos lúdicos y relevantes.</li>
+                        <li><strong>Teoría del flow:</strong> Balance entre desafío y habilidad para mantener compromiso óptimo.</li>
+                        <li><strong>Andamiaje progresivo:</strong> Construcción gradual de conocimiento desde lo simple a lo complejo.</li>
+                        <li><strong>Motivación intrínseca:</strong> Generación de interés genuino por las matemáticas más allá de calificaciones.</li>
+                    </ul>
+
+                    <h3>Impacto Esperado</h3>
+                    <div class="narrative-box">
+                        <p>Se espera que los estudiantes no solo mejoren su desempeño en evaluaciones matemáticas formales, sino que desarrollen una relación más positiva con las matemáticas, reduciendo la ansiedad matemática y aumentando la confianza en sus capacidades para resolver problemas numéricos complejos.</p>
+                    </div>
+                `
+            },
+            jugadores: {
+                title: "👥 Perfil de Jugadores",
+                body: `
+                    <h3>Audiencia Objetivo</h3>
+                    
+                    <div class="highlight-box">
+                        <h4>Características Demográficas</h4>
+                        <ul>
+                            <li><strong>Edad:</strong> 13-14 años (octavo grado).</li>
+                            <li><strong>Contexto:</strong> Colegio Parroquial Nuestra Señora de la Valvanera, Bogotá, Colombia.</li>
+                            <li><strong>Nivel socioeconómico:</strong> Mixto, predominantemente estratos 2-4.</li>
+                            <li><strong>Tamaño del grupo:</strong> Aproximadamente 30-35 estudiantes por curso.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>Perfil Académico</h4>
+                        <ul>
+                            <li><strong>Nivel matemático:</strong> Conocimientos básicos de operaciones aritméticas, con desempeño variado.</li>
+                            <li><strong>Dificultades comunes:</strong> Errores en jerarquía de operaciones, confusión con signos en enteros, dificultad para simplificar fracciones.</li>
+                            <li><strong>Fortalezas:</strong> Familiaridad con tecnología digital, disposición a actividades lúdicas.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>Perfil Tecnológico</h4>
+                        <ul>
+                            <li><strong>Competencia digital:</strong> Nativa digital, uso frecuente de dispositivos móviles.</li>
+                            <li><strong>Experiencia con videojuegos:</strong> Mayoría tiene experiencia con juegos móviles y en línea.</li>
+                            <li><strong>Acceso a tecnología:</strong> Variable en casa, garantizado en aula de informática.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Motivaciones y Preferencias</h3>
+                    <ul>
+                        <li>🎮 <strong>Ludificación:</strong> Alta receptividad a elementos de juego.</li>
+                        <li>🏆 <strong>Competencia:</strong> Motivación por superar desafíos y obtener logros.</li>
+                        <li>👥 <strong>Social:</strong> Disfrutan compartir avances con compañeros.</li>
+                        <li>⚡ <strong>Inmediatez:</strong> Preferencia por retroalimentación instantánea.</li>
+                        <li>🎨 <strong>Visual:</strong> Atracción por diseño atractivo y narrativa envolvente.</li>
+                    </ul>
+
+                    <h3>Barreras Potenciales</h3>
+                    <div class="narrative-box">
+                        <p><strong>Ansiedad matemática:</strong> Algunos estudiantes presentan actitudes negativas hacia las matemáticas.</p>
+                        <p><strong>Diversidad de ritmos:</strong> Velocidades de aprendizaje muy variables.</p>
+                        <p><strong>Acceso limitado:</strong> No todos tienen acceso constante a internet en casa.</p>
+                    </div>
+                `
+            },
+            narrativa: {
+                title: "📖 Narrativa del Juego",
+                body: `
+                    <h3>Historia Principal</h3>
+                    
+                    <div class="narrative-box">
+                        <p><strong>El Despertar del Dragón</strong></p>
+                        <p>En las tierras míticas de Matheria, un antiguo dragón llamado <strong>Numerus</strong> ha despertado de su sueño milenario. Numerus es el guardián del Orbe del Conocimiento Matemático, una reliquia que otorga sabiduría infinita.</p>
+                        
+                        <p>Sin embargo, el dragón ha sido corrompido por el Caos Aritmético, una fuerza oscura que distorsiona las leyes matemáticas del reino. Para liberar a Numerus y restaurar el equilibrio, los estudiantes deben convertirse en <strong>Maestros Matemáticos</strong>, viajando a través de cuatro reinos elementales y resolviendo los enigmas que han sido distorsionados.</p>
+                    </div>
+
+                    <h3>Los Cuatro Reinos</h3>
+
+                    <div class="highlight-box">
+                        <h4>🪨 Reino de la Tierra - Números Enteros</h4>
+                        <p><strong>Ambientación:</strong> Montañas rocosas, cavernas profundas, terrenos áridos.</p>
+                        <p><strong>Guardián:</strong> Golem Pétreo - Un gigante de roca que solo responde a cálculos precisos.</p>
+                        <p><strong>Desafío:</strong> Dominar operaciones con números enteros (suma, resta, multiplicación, división).</p>
+                        <p><strong>Lore:</strong> "En el Reino de la Tierra, los números positivos y negativos están en eterno conflicto. Solo quien comprenda su equilibrio podrá avanzar."</p>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>💨 Reino del Aire - Jerarquía de Operaciones</h4>
+                        <p><strong>Ambientación:</strong> Ciudades flotantes, torres de viento, puentes de nubes.</p>
+                        <p><strong>Guardián:</strong> Arpia Sabia - Una criatura alada que desafía con acertijos matemáticos.</p>
+                        <p><strong>Desafío:</strong> Aplicar correctamente la jerarquía de operaciones (PEMDAS/PEDMAS).</p>
+                        <p><strong>Lore:</strong> "En las alturas, el orden es ley. Solo quien siga la secuencia correcta podrá mantener el equilibrio de las torres flotantes."</p>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>💧 Reino del Agua - Fracciones</h4>
+                        <p><strong>Ambientación:</strong> Océanos infinitos, ríos cristalinos, cascadas místicas.</p>
+                        <p><strong>Guardián:</strong> Náyade Fraccionaria - Un espíritu acuático que fluye entre formas.</p>
+                        <p><strong>Desafío:</strong> Operar con fracciones (suma, resta, multiplicación, división, simplificación).</p>
+                        <p><strong>Lore:</strong> "El agua se divide y se une constantemente. Quien comprenda las partes del todo controlará las corrientes del reino."</p>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>🔥 Reino del Fuego - Integración Total</h4>
+                        <p><strong>Ambientación:</strong> Volcanes activos, desiertos de lava, forjas ardientes.</p>
+                        <p><strong>Guardián:</strong> Fénix Algebraico - Ave legendaria que renace con cada ecuación resuelta.</p>
+                        <p><strong>Desafío:</strong> Resolver problemas que integran todos los conceptos anteriores.</p>
+                        <p><strong>Lore:</strong> "El fuego purifica y transforma. Solo quien domine todas las artes matemáticas podrá templar la espada que liberará al dragón."</p>
+                    </div>
+
+                    <h3>Batalla Final</h3>
+                    <div class="highlight-box" style="background: rgba(255, 215, 0, 0.1);">
+                        <h4>🐉 Confrontación con Numerus</h4>
+                        <p>Tras superar los cuatro reinos, los estudiantes enfrentan a Numerus en una batalla épica donde deben demostrar su maestría matemática completa. El dragón presenta desafíos que combinan todos los conceptos aprendidos, y solo los más hábiles lograrán liberarlo del Caos Aritmético.</p>
+                    </div>
+
+                    <h3>Elementos Narrativos</h3>
+                    <ul>
+                        <li>📜 <strong>Pergaminos de sabiduría:</strong> Textos que explican conceptos matemáticos.</li>
+                        <li>🗺️ <strong>Mapa progresivo:</strong> Visualización del avance por los reinos.</li>
+                        <li>💬 <strong>Diálogos con guardianes:</strong> Interacciones que contextualizan desafíos.</li>
+                        <li>🎭 <strong>Avatares personalizables:</strong> Representación del estudiante en la aventura.</li>
+                    </ul>
+                `
+            },
+            desafios: {
+                title: "⚔️ Desafíos y Niveles",
+                body: `
+                    <h3>Estructura de Desafíos</h3>
+
+                    <div class="highlight-box">
+                        <h4>🪨 Nivel 1: Reino de la Tierra (Números Enteros)</h4>
+                        <p><strong>Contenidos:</strong></p>
+                        <ul>
+                            <li>Suma y resta de números enteros.</li>
+                            <li>Multiplicación de enteros (reglas de signos).</li>
+                            <li>División de enteros.</li>
+                            <li>Problemas contextualizados con enteros.</li>
+                        </ul>
+                        <p><strong>Tipos de ejercicios:</strong></p>
+                        <ul>
+                            <li>Cálculos directos: 15 + (-8) = ?</li>
+                            <li>Problemas narrativos: "El Golem Pétreo baja 15 metros y luego sube 8. ¿A qué altura está?"</li>
+                            <li>Secuencias de operaciones: -5 × 3 + 7</li>
+                        </ul>
+                        <p><strong>Dificultad:</strong> Básica a intermedia.</p>
+                        <p><strong>Puntos disponibles:</strong> 250 puntos.</p>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>💨 Nivel 2: Reino del Aire (Jerarquía de Operaciones)</h4>
+                        <p><strong>Contenidos:</strong></p>
+                        <ul>
+                            <li>Paréntesis, exponentes, multiplicación/división, adición/sustracción (PEMDAS).</li>
+                            <li>Expresiones con múltiples operadores.</li>
+                            <li>Simplificación de expresiones complejas.</li>
+                        </ul>
+                        <p><strong>Tipos de ejercicios:</strong></p>
+                        <ul>
+                            <li>Evaluación de expresiones: 3 + 5 × 2 - 4 = ?</li>
+                            <li>Ejercicios con paréntesis: (8 + 2) × 3 - 5</li>
+                            <li>Desafíos de prioridad: 20 ÷ 4 + 3 × 2</li>
+                        </ul>
+                        <p><strong>Dificultad:</strong> Intermedia.</p>
+                        <p><strong>Puntos disponibles:</strong> 300 puntos.</p>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>💧 Nivel 3: Reino del Agua (Fracciones)</h4>
+                        <p><strong>Contenidos:</strong></p>
+                        <ul>
+                            <li>Suma y resta de fracciones (MCM).</li>
+                            <li>Multiplicación y división de fracciones.</li>
+                            <li>Simplificación de fracciones.</li>
+                            <li>Conversión entre fracciones impropias y mixtas.</li>
+                        </ul>
+                        <p><strong>Tipos de ejercicios:</strong></p>
+                        <ul>
+                            <li>Operaciones básicas: 2/3 + 1/4 = ?</li>
+                            <li>Problemas contextualizados: "La Náyade dividió su poder en 3/5 y 1/3. ¿Cuánto le queda?"</li>
+                            <li>Simplificación: Reduce 12/18 a su mínima expresión.</li>
+                        </ul>
+                        <p><strong>Dificultad:</strong> Intermedia a avanzada.</p>
+                        <p><strong>Puntos disponibles:</strong> 350 puntos.</p>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>🔥 Nivel 4: Reino del Fuego (Integración Total)</h4>
+                        <p><strong>Contenidos:</strong></p>
+                        <ul>
+                            <li>Combinación de enteros, jerarquía y fracciones.</li>
+                            <li>Problemas de múltiples pasos.</li>
+                            <li>Desafíos de razonamiento matemático.</li>
+                        </ul>
+                        <p><strong>Tipos de ejercicios:</strong></p>
+                        <ul>
+                            <li>Expresiones complejas: (3/4 + 1/2) × (-8 + 5)</li>
+                            <li>Problemas mixtos: "El Fénix vuela a 2/3 de su velocidad máxima durante 5 minutos..."</li>
+                            <li>Retos lógicos: Determina el patrón y completa la secuencia.</li>
+                        </ul>
+                        <p><strong>Dificultad:</strong> Avanzada.</p>
+                        <p><strong>Puntos disponibles:</strong> 400 puntos.</p>
+                    </div>
+
+                    <div class="highlight-box" style="background: rgba(255, 215, 0, 0.1);">
+                        <h4>🐉 Batalla Final: Numerus el Dragón</h4>
+                        <p><strong>Formato:</strong> 10 preguntas de máxima dificultad.</p>
+                        <p><strong>Contenidos:</strong> Integración completa de todos los conceptos.</p>
+                        <p><strong>Tipos de ejercicios:</strong></p>
+                        <ul>
+                            <li>Problemas de aplicación en contextos reales.</li>
+                            <li>Expresiones algebraicas complejas.</li>
+                            <li>Desafíos de razonamiento avanzado.</li>
+                        </ul>
+                        <p><strong>Condición de victoria:</strong> Mínimo 70% de aciertos.</p>
+                        <p><strong>Recompensa:</strong> Título de "Maestro Matemático" + 700 puntos + certificado digital.</p>
+                    </div>
+
+                    <h3>Progresión de Dificultad</h3>
+                    <table>
+                        <tr>
+                            <th>Nivel</th>
+                            <th>Preguntas</th>
+                            <th>Tiempo Estimado</th>
+                            <th>Desbloqueo</th>
+                        </tr>
+                        <tr>
+                            <td>Reino de la Tierra</td>
+                            <td>15</td>
+                            <td>20-25 min</td>
+                            <td>Automático</td>
+                        </tr>
+                        <tr>
+                            <td>Reino del Aire</td>
+                            <td>15</td>
+                            <td>25-30 min</td>
+                            <td>≥60% nivel anterior</td>
+                        </tr>
+                        <tr>
+                            <td>Reino del Agua</td>
+                            <td>15</td>
+                            <td>30-35 min</td>
+                            <td>≥60% nivel anterior</td>
+                        </tr>
+                        <tr>
+                            <td>Reino del Fuego</td>
+                            <td>15</td>
+                            <td>35-40 min</td>
+                            <td>≥60% nivel anterior</td>
+                        </tr>
+                        <tr>
+                            <td>Batalla Final</td>
+                            <td>10</td>
+                            <td>30 min</td>
+                            <td>Completar 4 reinos</td>
+                        </tr>
+                    </table>
+                `
+            },
+            mecanicas: {
+                title: "⚙️ Mecánicas de Juego",
+                body: `
+                    <h3>Sistema de Progresión</h3>
+
+                    <div class="highlight-box">
+                        <h4>Estructura Lineal con Desbloqueo</h4>
+                        <ul>
+                            <li>Los estudiantes avanzan secuencialmente por los reinos.</li>
+                            <li>Cada reino se desbloquea al completar el anterior con ≥60% de aciertos.</li>
+                            <li>Se pueden reintentar reinos para mejorar puntuación.</li>
+                            <li>El progreso se guarda automáticamente.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Mecánicas de Juego Principales</h3>
+
+                    <div class="highlight-box">
+                        <h4>1. Sistema de Puntos</h4>
+                        <ul>
+                            <li><strong>Respuestas correctas (primera vez):</strong> 100% de puntos.</li>
+                            <li><strong>Respuestas correctas (segundo intento):</strong> 50% de puntos.</li>
+                            <li><strong>Respuestas incorrectas:</strong> 0 puntos.</li>
+                            <li><strong>Bonificación por velocidad:</strong> +10% si se completa en menos del 80% del tiempo estimado.</li>
+                            <li><strong>Bonificación por perfección:</strong> +20% si se obtiene 100% de aciertos en el nivel.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>2. Sistema de Vidas</h4>
+                        <ul>
+                            <li>Cada estudiante inicia con 3 vidas por nivel.</li>
+                            <li>Se pierde una vida con cada respuesta incorrecta.</li>
+                            <li>Al perder todas las vidas, se puede reiniciar el nivel.</li>
+                            <li>Las vidas se restauran completamente al comenzar un nuevo reino.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>3. Ayudas y Power-ups</h4>
+                        <ul>
+                            <li><strong>💡 Pista del sabio (1 por nivel):</strong> Revela un paso del procedimiento.</li>
+                            <li><strong>🔮 Visión mágica (1 por nivel):</strong> Elimina dos opciones incorrectas.</li>
+                            <li><strong>⏰ Detención del tiempo (1 uso total):</strong> Pausa el cronómetro por 2 minutos.</li>
+                            <li><strong>📚 Pergamino de conocimiento (ilimitado):</strong> Acceso a teoría relevante.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>4. Retroalimentación Inmediata</h4>
+                        <ul>
+                            <li><strong>Respuesta correcta:</strong> Animación de celebración + explicación opcional + puntos ganados.</li>
+                            <li><strong>Respuesta incorrecta:</strong> Explicación detallada del error + procedimiento correcto + opción de segundo intento.</li>
+                            <li><strong>Progreso visual:</strong> Barra de progreso del reino + mapa interactivo.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Mecánicas de Motivación</h3>
+
+                    <div class="highlight-box">
+                        <h4>Logros Desbloqueables</h4>
+                        <table>
+                            <tr>
+                                <th>Logro</th>
+                                <th>Requisito</th>
+                                <th>Recompensa</th>
+                            </tr>
+                            <tr>
+                                <td>🏅 Aprendiz de la Tierra</td>
+                                <td>Completar Reino de la Tierra</td>
+                                <td>Insignia + 50 puntos extra</td>
+                            </tr>
+                            <tr>
+                                <td>🌪️ Dominador del Aire</td>
+                                <td>100% en Reino del Aire</td>
+                                <td>Título especial + 100 puntos</td>
+                            </tr>
+                            <tr>
+                                <td>🌊 Maestro del Agua</td>
+                                <td>Sin usar ayudas en Reino del Agua</td>
+                                <td>Avatar exclusivo + 75 puntos</td>
+                            </tr>
+                            <tr>
+                                <td>🔥 Señor del Fuego</td>
+                                <td>Completar en tiempo mínimo</td>
+                                <td>Efecto visual + 100 puntos</td>
+                            </tr>
+                            <tr>
+                                <td>🐉 Libertador de Numerus</td>
+                                <td>Vencer batalla final</td>
+                                <td>Certificado digital + reconocimiento público</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <h3>Ranking y Competencia</h3>
+                    <ul>
+                        <li>📊 <strong>Tabla de clasificación:</strong> Ranking visible de puntuación total.</li>
+                        <li>🏆 <strong>Top 3 por reino:</strong> Reconocimiento especial por nivel.</li>
+                        <li>⭐ <strong>Estrellas de maestría:</strong> Sistema de 1-3 estrellas por desempeño.</li>
+                        <li>👥 <strong>Progreso compartido:</strong> Los estudiantes pueden ver el avance general del grupo (sin nombres).</li>
+                    </ul>
+
+                    <h3>Sistema de Reintentos</h3>
+                    <div class="narrative-box">
+                        <p>Los estudiantes pueden reintentar cualquier reino completado para mejorar su puntuación. El sistema registra el mejor desempeño. Los reintentos no afectan negativamente la puntuación existente, fomentando una cultura de mejora continua.</p>
+                    </div>
+                `
+            },
+            recompensas: {
+                title: "🏆 Sistema de Recompensas",
+                body: `
+                    <h3>Tipos de Recompensas</h3>
+
+                    <div class="highlight-box">
+                        <h4>1. Recompensas Intrínsecas (Gamificación)</h4>
+                        <ul>
+                            <li><strong>🏅 Insignias digitales:</strong> Coleccionables por completar desafíos específicos.</li>
+                            <li><strong>🎨 Avatares personalizables:</strong> Desbloqueo de equipamiento medieval (armaduras, armas, accesorios).</li>
+                            <li><strong>🗺️ Mapas de progreso visual:</strong> Visualización del viaje completado.</li>
+                            <li><strong>📜 Certificados digitales:</strong> Reconocimiento formal de logros.</li>
+                            <li><strong>✨ Efectos visuales especiales:</strong> Animaciones exclusivas para top performers.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>2. Recompensas Extrínsecas (Académicas)</h4>
+                        <ul>
+                            <li><strong>📊 Puntos sumables a nota de periodo:</strong> Conversión de puntos del juego en puntos académicos.</li>
+                            <li><strong>🎓 Reconocimiento público:</strong> Mención especial en clase.</li>
+                            <li><strong>🏆 Premios tangibles (opcional):</strong> Pequeños incentivos para top 3 (ej: stickers, lapiceros temáticos).</li>
+                            <li><strong>📝 Eximición parcial de evaluación formal:</strong> Los estudiantes que completen todos los reinos con ≥90% pueden optar por una evaluación más corta.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Tabla de Conversión Puntos-Nota</h3>
+                    <table>
+                        <tr>
+                            <th>Puntos Totales</th>
+                            <th>Equivalencia Académica</th>
+                            <th>Nivel de Desempeño</th>
+                        </tr>
+                        <tr>
+                            <td>1800-2000</td>
+                            <td>5.0 (Excelente)</td>
+                            <td>Superior</td>
+                        </tr>
+                        <tr>
+                            <td>1600-1799</td>
+                            <td>4.5 (Sobresaliente)</td>
+                            <td>Alto</td>
+                        </tr>
+                        <tr>
+                            <td>1400-1599</td>
+                            <td>4.0 (Bueno)</td>
+                            <td>Básico</td>
+                        </tr>
+                        <tr>
+                            <td>1200-1399</td>
+                            <td>3.5 (Aceptable)</td>
+                            <td>Básico</td>
+                        </tr>
+                        <tr>
+                            <td>1000-1199</td>
+                            <td>3.0 (Mínimo)</td>
+                            <td>Bajo</td>
+                        </tr>
+                        <tr>
+                            <td>0-999</td>
+                            <td>2.5 o menos</td>
+                            <td>Bajo</td>
+                        </tr>
+                    </table>
+
+                    <h3>Sistema de Logros Especiales</h3>
+
+                    <div class="highlight-box">
+                        <h4>Logros de Maestría</h4>
+                        <ul>
+                            <li><strong>🌟 Perfeccionista:</strong> 100% de aciertos en todos los reinos.</li>
+                            <li><strong>⚡ Rápido como el rayo:</strong> Completar todos los reinos 30% más rápido que el tiempo estimado.</li>
+                            <li><strong>🧠 Autodidacta:</strong> Completar sin usar ayudas (pistas, visión mágica).</li>
+                            <li><strong>💪 Resiliente:</strong> Completar todos los reinos después de fallar al menos una vez.</li>
+                            <li><strong>🔄 Mejorador continuo:</strong> Reintentar y mejorar puntuación en al menos 3 reinos.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>Logros Sociales</h4>
+                        <ul>
+                            <li><strong>👑 Rey/Reina de Matheria:</strong> Primer lugar en ranking general.</li>
+                            <li><strong>🥇🥈🥉 Podio elemental:</strong> Top 3 en cada reino.</li>
+                            <li><strong>🎯 Pionero:</strong> Primero en completar cada reino.</li>
+                            <li><strong>🏅 Constancia:</strong> Completar al menos un reino cada semana.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Recompensas de Progreso</h3>
+                    <div class="narrative-box">
+                        <p><strong>Desbloqueo progresivo de contenido:</strong> A medida que avanzan, los estudiantes desbloquean contenido adicional:</p>
+                        <ul>
+                            <li>📖 <strong>Biblioteca del Sabio:</strong> Tutoriales avanzados y curiosidades matemáticas.</li>
+                            <li>🎮 <strong>Modo desafío:</strong> Versiones más difíciles de los reinos para quienes buscan retos extremos.</li>
+                            <li>🎨 <strong>Galería de arte medieval:</strong> Imágenes y arte relacionado con la narrativa.</li>
+                            <li>🎵 <strong>Pistas musicales exclusivas:</strong> Música épica desbloqueable.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Motivación a Largo Plazo</h3>
+                    <ul>
+                        <li>📅 <strong>Eventos especiales:</strong> Desafíos semanales con recompensas limitadas.</li>
+                        <li>🏆 <strong>Hall of Fame:</strong> Galería permanente de "Maestros Matemáticos" (con permiso).</li>
+                        <li>🎓 <strong>Certificado impreso:</strong> Reconocimiento oficial para quienes completen la aventura con ≥80%.</li>
+                    </ul>
+                `
+            },
+            estetica: {
+                title: "🎨 Estética y Diseño",
+                body: `
+                    <h3>Estilo Visual</h3>
+
+                    <div class="highlight-box">
+                        <h4>Temática General</h4>
+                        <p><strong>Estilo:</strong> Medieval fantástico con elementos de dragones y magia.</p>
+                        <p><strong>Paleta de colores:</strong></p>
+                        <ul>
+                            <li>🪨 <strong>Reino de la Tierra:</strong> Marrones, grises, ocres (paleta terrosa).</li>
+                            <li>💨 <strong>Reino del Aire:</strong> Azules claros, blancos, tonos plateados.</li>
+                            <li>💧 <strong>Reino del Agua:</strong> Azules profundos, turquesas, verdes agua.</li>
+                            <li>🔥 <strong>Reino del Fuego:</strong> Rojos, naranjas, amarillos intensos.</li>
+                            <li>🐉 <strong>Batalla Final:</strong> Dorados, púrpuras, negros (majestuoso y épico).</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>Elementos Visuales</h4>
+                        <ul>
+                            <li>🗺️ <strong>Mapa interactivo:</strong> Representación visual de los reinos con progreso.</li>
+                            <li>🏰 <strong>Arquitectura medieval:</strong> Castillos, torres, puentes, fortalezas.</li>
+                            <li>🎭 <strong>Avatares personalizables:</strong> Diseño de personaje con equipamiento.</li>
+                            <li>✨ <strong>Efectos de partículas:</strong> Chispas, humo, agua, fuego según el reino.</li>
+                            <li>🌌 <strong>Fondos dinámicos:</strong> Animaciones sutiles (nubes moviéndose, agua fluyendo).</li>
+                        </ul>
+                    </div>
+
+                    <h3>Experiencia Sensorial</h3>
+
+                    <div class="highlight-box">
+                        <h4>Audio</h4>
+                        <ul>
+                            <li>🎵 <strong>Música de fondo:</strong> Melodías medievales épicas (opcionales, con control de volumen).</li>
+                            <li>🔊 <strong>Efectos de sonido:</strong>
+                                <ul>
+                                    <li>Respuesta correcta: Sonido de victoria/fanfarria.</li>
+                                    <li>Respuesta incorrecta: Sonido suave de error.</li>
+                                    <li>Desbloqueo de logro: Sonido épico de triunfo.</li>
+                                    <li>Cambio de reino: Transición musical.</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>Animaciones</h4>
+                        <ul>
+                            <li>⚡ <strong>Transiciones suaves:</strong> Cambios de pantalla con efectos visuales.</li>
+                            <li>🎊 <strong>Celebraciones:</strong> Confeti digital, explosiones de luz.</li>
+                            <li>🐉 <strong>Animación del dragón:</strong> Movimientos del guardián final.</li>
+                            <li>📊 <strong>Barras de progreso animadas:</strong> Llenado dinámico de barras.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Diseño de Interfaz</h3>
+
+                    <div class="highlight-box">
+                        <h4>Principios de UX/UI</h4>
+                        <ul>
+                            <li>📱 <strong>Responsivo:</strong> Adaptable a dispositivos móviles, tablets y computadoras.</li>
+                            <li>🎯 <strong>Intuitivo:</strong> Navegación clara sin instrucciones complejas.</li>
+                            <li>♿ <strong>Accesible:</strong> Tamaño de fuente ajustable, contraste adecuado.</li>
+                            <li>⚡ <strong>Rápido:</strong> Carga optimizada para conexiones lentas.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>Componentes Principales</h4>
+                        <ul>
+                            <li>🏠 <strong>Pantalla de inicio:</strong> Mapa de reinos con indicadores de progreso.</li>
+                            <li>📝 <strong>Pantalla de ejercicios:</strong> Pregunta clara + opciones + temporizador + vidas.</li>
+                            <li>📊 <strong>Dashboard personal:</strong> Estadísticas, logros, ranking.</li>
+                            <li>🏆 <strong>Pantalla de logros:</strong> Galería de insignias y certificados.</li>
+                            <li>👤 <strong>Perfil de usuario:</strong> Avatar, nombre, nivel, puntos totales.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Tipografía</h3>
+                    <ul>
+                        <li>📜 <strong>Títulos:</strong> Fuente medieval decorativa (legible).</li>
+                        <li>📖 <strong>Cuerpo de texto:</strong> Fuente sans-serif moderna para facilitar lectura.</li>
+                        <li>🔢 <strong>Números matemáticos:</strong> Fuente clara y diferenciada.</li>
+                    </ul>
+
+                    <h3>Consideraciones de Diseño</h3>
+                    <div class="narrative-box">
+                        <p><strong>Balance visual:</strong> Aunque la estética medieval es inmersiva, se prioriza la claridad en la presentación de problemas matemáticos. Los elementos decorativos nunca deben distraer del contenido educativo principal.</p>
+                        <p><strong>Feedback visual constante:</strong> Cada acción del usuario debe tener una respuesta visual inmediata (hover effects, clicks, transiciones).</p>
+                    </div>
+                `
+            },
+            evaluacion: {
+                title: "📊 Sistema de Evaluación",
+                body: `
+                    <h3>Evaluación Formativa Continua</h3>
+
+                    <div class="highlight-box">
+                        <h4>Durante el Juego</h4>
+                        <ul>
+                            <li><strong>Tracking automático:</strong> Registro de cada intento, tiempo, y estrategia usada.</li>
+                            <li><strong>Análisis de errores:</strong> Identificación de patrones de error por estudiante.</li>
+                            <li><strong>Retroalimentación inmediata:</strong> Explicaciones adaptativas según el error cometido.</li>
+                            <li><strong>Ajuste de dificultad:</strong> Sugerencias de repaso si se detectan dificultades persistentes.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Métricas de Evaluación</h3>
+
+                    <div class="highlight-box">
+                        <h4>1. Rendimiento Cuantitativo</h4>
+                        <table>
+                            <tr>
+                                <th>Métrica</th>
+                                <th>Descripción</th>
+                            </tr>
+                            <tr>
+                                <td>Tasa de acierto</td>
+                                <td>Porcentaje de respuestas correctas por reino.</td>
+                            </tr>
+                            <tr>
+                                <td>Tiempo de resolución</td>
+                                <td>Promedio de tiempo por pregunta.</td>
+                            </tr>
+                            <tr>
+                                <td>Intentos por pregunta</td>
+                                <td>Número de intentos antes de acertar.</td>
+                            </tr>
+                            <tr>
+                                <td>Uso de ayudas</td>
+                                <td>Frecuencia de uso de pistas y power-ups.</td>
+                            </tr>
+                            <tr>
+                                <td>Progresión temporal</td>
+                                <td>Velocidad de avance por los reinos.</td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>2. Análisis Cualitativo</h4>
+                        <ul>
+                            <li><strong>Tipos de errores:</strong> Conceptuales vs. procedimentales vs. de cálculo.</li>
+                            <li><strong>Estrategias de resolución:</strong> Identificación de métodos utilizados.</li>
+                            <li><strong>Persistencia:</strong> Reintentos y mejora continua.</li>
+                            <li><strong>Autonomía:</strong> Capacidad de resolver sin ayuda externa.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Niveles de Desempeño</h3>
+                    <table>
+                        <tr>
+                            <th>Porcentaje</th>
+                            <th>Nivel</th>
+                        </tr>
+                        <tr>
+                            <td>90-100%</td>
+                            <td>Superior</td>
+                        </tr>
+                        <tr>
+                            <td>75-89%</td>
+                            <td>Alto</td>
+                        </tr>
+                        <tr>
+                            <td>60-74%</td>
+                            <td>Básico</td>
+                        </tr>
+                        <tr>
+                            <td>0-59%</td>
+                            <td>Bajo</td>
+                        </tr>
+                    </table>
+
+                    <h3>Retroalimentación</h3>
+                    <ul>
+                        <li>Feedback inmediato automatizado.</li>
+                        <li>Explicaciones detalladas.</li>
+                        <li>Oportunidad de aprender de errores.</li>
+                    </ul>
+                `
+            },
+            competencias: {
+                title: "🎓 Competencias",
+                body: `
+                    <h3>Competencias Matemáticas</h3>
+
+                    <div class="highlight-box">
+                        <h4>1. Pensamiento Numérico</h4>
+                        <p>Utilizar números enteros y racionales en diferentes contextos.</p>
+                        <ul>
+                            <li>Operar con enteros y fracciones.</li>
+                            <li>Aplicar propiedades.</li>
+                            <li>Simplificar expresiones.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>2. Razonamiento Matemático</h4>
+                        <p>Formular y resolver problemas con estrategias diversas.</p>
+                        <ul>
+                            <li>Analizar problemas.</li>
+                            <li>Aplicar jerarquía.</li>
+                            <li>Verificar respuestas.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>3. Resolución de Problemas</h4>
+                        <p>Plantear y resolver en contextos diversos.</p>
+                        <ul>
+                            <li>Interpretar enunciados.</li>
+                            <li>Aplicar conceptos a situaciones reales.</li>
+                            <li>Evaluar soluciones.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Competencias Transversales</h3>
+                    <ul>
+                        <li>💡 Pensamiento Crítico.</li>
+                        <li>🎨 Creatividad.</li>
+                        <li>🧠 Metacognición.</li>
+                        <li>💪 Resiliencia.</li>
+                        <li>💻 Competencia Digital.</li>
+                    </ul>
+                `
+            },
+            capacidades: {
+                title: "💡 Capacidades",
+                body: `
+                    <h3>Capacidades Cognitivas</h3>
+
+                    <div class="highlight-box">
+                        <h4>1. Cálculo Numérico</h4>
+                        <p>Ejecutar operaciones con precisión.</p>
+                        <ul>
+                            <li>Operar con enteros mentalmente.</li>
+                            <li>Trabajar con fracciones.</li>
+                            <li>Simplificar expresiones.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>2. Aplicación de Algoritmos</h4>
+                        <p>Seguir procedimientos paso a paso.</p>
+                        <ul>
+                            <li>Aplicar PEMDAS.</li>
+                            <li>Usar algoritmos de fracciones.</li>
+                            <li>Simplificar sistemáticamente.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>3. Razonamiento Lógico</h4>
+                        <p>Establecer relaciones causa-efecto.</p>
+                        <ul>
+                            <li>Determinar operaciones apropiadas.</li>
+                            <li>Verificar razonabilidad.</li>
+                            <li>Detectar errores.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Capacidades Metacognitivas</h3>
+                    <ul>
+                        <li>🔍 Automonitoreo.</li>
+                        <li>🤔 Reflexión sobre aprendizaje.</li>
+                        <li>⚙️ Autorregulación.</li>
+                    </ul>
+
+                    <h3>Capacidades Socioemocionales</h3>
+                    <ul>
+                        <li>💪 Resiliencia Matemática.</li>
+                        <li>😊 Confianza.</li>
+                        <li>🧘 Gestión de ansiedad.</li>
+                    </ul>
+                `
+            },
+            desempenos: {
+                title: "✅ Desempeños",
+                body: `
+                    <h3>Desempeños Esperados</h3>
+
+                    <div class="highlight-box">
+                        <h4>🪨 Reino de la Tierra</h4>
+                        <p><strong>El estudiante:</strong></p>
+                        <ul>
+                            <li>Suma y resta enteros correctamente.</li>
+                            <li>Multiplica y divide aplicando reglas de signos.</li>
+                            <li>Resuelve problemas contextualizados.</li>
+                            <li>Obtiene ≥60% de aciertos.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>💨 Reino del Aire</h4>
+                        <p><strong>El estudiante:</strong></p>
+                        <ul>
+                            <li>Aplica correctamente PEMDAS.</li>
+                            <li>Resuelve paréntesis primero.</li>
+                            <li>Ejecuta multiplicación/división antes de suma/resta.</li>
+                            <li>Obtiene ≥60% de aciertos.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>💧 Reino del Agua</h4>
+                        <p><strong>El estudiante:</strong></p>
+                        <ul>
+                            <li>Suma fracciones con MCM.</li>
+                            <li>Multiplica fracciones correctamente.</li>
+                            <li>Divide invirtiendo y multiplicando.</li>
+                            <li>Simplifica a mínima expresión.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box">
+                        <h4>🔥 Reino del Fuego</h4>
+                        <p><strong>El estudiante:</strong></p>
+                        <ul>
+                            <li>Aplica jerarquía con fracciones.</li>
+                            <li>Resuelve expresiones complejas.</li>
+                            <li>Integra múltiples conceptos.</li>
+                            <li>Demuestra dominio matemático.</li>
+                        </ul>
+                    </div>
+
+                    <div class="highlight-box" style="background: rgba(255, 215, 0, 0.1);">
+                        <h4>🐉 Batalla Final</h4>
+                        <p><strong>El estudiante demuestra:</strong></p>
+                        <ul>
+                            <li>Integración de todos los conceptos.</li>
+                            <li>Flexibilidad cognitiva.</li>
+                            <li>Aplicación bajo presión.</li>
+                            <li>Transferencia de conocimientos.</li>
+                        </ul>
+                    </div>
+
+                    <h3>Desempeños Transversales</h3>
+                    <ul>
+                        <li>✅ Gestiona su tiempo autónomamente.</li>
+                        <li>✅ Persiste ante dificultades.</li>
+                        <li>✅ Reflexiona sobre su aprendizaje.</li>
+                        <li>✅ Completa la aventura exitosamente.</li>
+                    </ul>
+                `
+            }
+        };
+
+        // Función para abrir modal
+        function openModal(section) {
+            const modal = document.getElementById('modal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+            
+            modalTitle.textContent = content[section].title;
+            modalBody.innerHTML = content[section].body;
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // Función para cerrar modal
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Cerrar modal al hacer clic fuera
+        document.getElementById('modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
+
+        // Cerrar modal con Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+</html>
